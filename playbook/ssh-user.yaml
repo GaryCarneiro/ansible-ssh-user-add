@@ -1,0 +1,55 @@
+#!/usr/bin/env ansible-playbook
+
+- hosts: dev_env
+  become: true
+  gather_facts: false
+  tasks:
+  - name: Ensure group "developers" exists
+    group:
+      name: developers
+      state: present
+  - name: User Jitendra
+    user:
+      name: jitendra
+      comment: Jitendra Fakeuser
+      uid: 1080
+      group: developers
+      state: present 
+      create_home: yes
+      shell: /bin/bash
+  - name: User Dharmendra
+    user:
+      name: dharmendra
+      comment: Dharmendra Fakeuser
+      uid: 1081
+      group: developers
+      state: absent
+      create_home: yes
+      shell: /bin/false
+
+  - name: Add SSH Keys for Jitendra
+    copy:
+      src: ../authorized_keys/jitendra.pub
+      dest: /etc/ssh/authorized_keys/jitendra.pub
+      owner: root
+      group: root
+      mode: 0444
+  - name: Add SSH Keys for Dharmendra
+    copy:
+      src: ../authorized_keys/dharmendra.pub
+      dest: /etc/ssh/authorized_keys/dharmendra.pub
+      owner: root
+      group: root
+      mode: 0444
+  
+  - name: SSH Daemon Configuration
+    template:
+      src: ../templates/sshd_config.j2
+      dest: /etc/ssh/sshd_config
+    notify:
+    - restart sshd
+  handlers:
+    - name: restart sshd
+      service:
+        name: ssh
+        state: restarted
